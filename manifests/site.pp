@@ -13,11 +13,12 @@ define nginx::site($domain,
                    $aliases=[],
                    $ssl=false,
                    $ssl_certificate="",
-                   $ssl_certificate_key="") {
+                   $ssl_certificate_key="",
+                   $manage_directory=true) {
 
   $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
 
-  if $ensure == 'present' {
+  if $ensure == 'present' and $manage_directory {
     # Parent directory of root directory. /var/www for /var/www/blog
     $root_parent = inline_template("<%= root.match(%r!(.+)/.+!)[1] %>")
 
@@ -36,7 +37,7 @@ define nginx::site($domain,
       require => File[$root_parent],
     }
 
-  } elsif $ensure == 'absent' {
+  } elsif $ensure == 'absent' and $manage_directory {
 
     file { $root:
       ensure => $ensure,
