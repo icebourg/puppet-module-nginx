@@ -36,6 +36,7 @@ server {
   root <%= root %>;
 
   access_log  /var/log/nginx/<%= name %>.access.log;
+  error_log  /var/log/nginx/<%= name %>.error.log;
 
   keepalive_timeout 5;
 
@@ -53,8 +54,12 @@ server {
   <% end %>
 
   location / {
-
-    <% unless upstreams.empty? %>
+    
+    <% if !fastcgi_pass.empty? %>
+    try_files $uri $uri/ @php;
+    index index.php;
+    <% elsif !upstreams.empty? %>
+    index index.html;
     try_files $uri @<%= name %>;
     <% else %>
     index  index.html;
@@ -67,6 +72,18 @@ server {
     try_files $uri $uri/ $uri.html =404;
     <% end %>
   }
+  
+  <% unless fastcgi_pass.empty? %>
+  location @php {
+    rewrite ^/(.*) /index.php?$1 last;
+  }
+  
+  location ~ \.php {
+    include /etc/nginx/fastcgi_params;
+    fastcgi_pass <%= fastcgi_pass %>;
+    fastcgi_param SCRIPT_FILENAME <%= root %>$fastcgi_script_name;
+  }
+  <% end %>
 
   <% unless upstreams.empty? %>
   location @<%= name %> {
